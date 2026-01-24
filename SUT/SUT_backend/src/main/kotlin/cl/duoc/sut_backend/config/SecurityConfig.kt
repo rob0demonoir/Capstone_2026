@@ -26,7 +26,7 @@ class SecurityConfig {
             .csrf{ it.disable() } //CSRF DOWN
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("api/auth/**").permitAll() //se puede entrar al login y al registro sin autenticación
+                    .requestMatchers("/api/autenticacion/**").permitAll() //se puede entrar al login y al registro sin autenticación
                     .anyRequest().authenticated() // para todo lo demás se debe autenticar
             }
         return http.build()

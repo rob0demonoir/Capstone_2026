@@ -23,7 +23,7 @@ data class Usuario (
     val email: String,
 
     @Column(nullable = false)
-    val contrasena: String,
+    val contrasena: String?,
 
     @Column(nullable = false)
     val direccion: String,
@@ -32,7 +32,7 @@ data class Usuario (
     val fechaNacimiento: LocalDate,
 
     @Column(nullable = false)
-    val telefono : String,
+    val telefono: String,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
