@@ -12,7 +12,7 @@ import javax.crypto.SecretKey
 @Service
 class JwtService {
 
-    private val SECRET_KEY = "llave67secreta67ultra67hiper67mega67seguraxD676767creador67"
+    private val SECRETKEY = "llave67secreta67ultra67hiper67mega67seguraxD676767creador67"
     //ESTA LLAVE SECRETA FUE CREADA CON AYUDA DE MI HIJITO, QUE EN ROBLOX SE LLAMA leong4m3r_exe <3
 
     fun generarToken(email: String): String{
@@ -25,20 +25,40 @@ class JwtService {
     }
 
     private fun obtenerFirma(): SecretKey{
-        val llavecita = Decoders.BASE64.decode(SECRET_KEY)
+        val llavecita = Decoders.BASE64.decode(SECRETKEY)
         return Keys.hmacShaKeyFor(llavecita)
     }
 
     fun extraerEmail(token: String): String{
-        return extractClaim(token) {claims -> claims.subject}
+        return extraerClaim(token) {claims -> claims.subject}
     }
 
-    fun <T> extractClaim(token: String, claimsResolver: (io.jsonwebtoken.Claims) -> T): T{
+    fun <T> extraerClaim(token: String, claimsResolver: (Claims) -> T): T{
         val claims = extractAllClaims(token)
         return claimsResolver(claims)
     }
 
-    fun 
+    fun validarToken(token: String, detalleUsuario: org.springframework.security.core.userdetails.UserDetails): Boolean {
+        val email = extraerEmail(token)
+        return (email == detalleUsuario.username && !tokenExpirado(token))
+    }
+
+    private fun tokenExpirado(token: String): Boolean {
+        return extraerExpiracion(token).before(Date())
+    }
+
+    private fun extraerExpiracion(token: String): Date {
+        return extraerClaim(token) {claims -> claims.expiration}
+    }
+
+    private fun extractAllClaims(token: String): Claims {
+        return Jwts.parserBuilder()
+            .setSigningKey(obtenerFirma())
+            .build()
+            .parseClaimsJws(token)
+            .body
+    }
+
 
 }
 
