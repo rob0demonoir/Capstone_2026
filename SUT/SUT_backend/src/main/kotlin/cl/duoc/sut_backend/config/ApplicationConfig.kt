@@ -10,7 +10,34 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 @Configuration
-class ApplicationConfig {
+class ApplicationConfig(
+    private val usuarioRepository: UsuarioRepository
+) {
+    @Bean
+    fun servicioDetallesUsuario(): UserDetailsService {
+        return UserDetailsService { username ->
+            usuarioRepository.findByEmail(username)
+                .orElseThrow{ UsernameNotFoundException ("Usuario no encontrado.") }
+            }
+    }
+
+    @Bean
+    fun passwordEncoder(): PasswordEncoder {
+        return BCryptPasswordEncoder()
+    }
+    @Bean
+    fun proveedorAutenticacion(passwordEncoder: PasswordEncoder, userDetailsService: UserDetailsService): AuthenticationProvider {
+        val authProvider = DaoAuthenticationProvider(userDetailsService)
+        authProvider.setPasswordEncoder(passwordEncoder)
+        return authProvider
+    }
+
+    @Bean
+    fun administradorAutenticacion(config: AuthenticationConfiguration): AuthenticationManager{
+        return config.authenticationManager
+    }
+
 }

@@ -26,7 +26,7 @@ class AutenticacionService (
             nombre = request.nombre,
             apellido = request.apellido,
             email = request.email,
-            contrasena = passwordEncoder.encode(request.contrasena),
+            contrasena = passwordEncoder.encode(request.contrasena).toString(),
             direccion = request.direccion,
             fechaNacimiento = request.fechaNacimiento,
             telefono = request.telefono,

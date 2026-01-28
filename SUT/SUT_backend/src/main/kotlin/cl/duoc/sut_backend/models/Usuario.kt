@@ -1,7 +1,15 @@
 package cl.duoc.sut_backend.models
 
 import jakarta.persistence.*
+import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
+import org.springframework.security.core.GrantedAuthority
 import java.time.LocalDate
+
+//implementar detalles de usuario
+import org.springframework.security.core.userdetails.UserDetails
+
+//implementar autorizacion para acceso
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 
 @Entity
 @Table(name = "usuarios")
@@ -23,7 +31,7 @@ data class Usuario (
     val email: String,
 
     @Column(nullable = false)
-    val contrasena: String?,
+    val contrasena: String,
 
     @Column(nullable = false)
     val direccion: String,
@@ -42,7 +50,20 @@ data class Usuario (
     val habilitado: Boolean = true
 
 
-)
+) : UserDetails {
+    override fun getAuthorities(): Collection<GrantedAuthority> {
+        return listOf(SimpleGrantedAuthority("ROLE_" + rol.name))
+    }
+
+    override fun getPassword(): String = contrasena
+    override fun getUsername(): String = email
+    override fun isAccountNonExpired(): Boolean = true
+    override fun isAccountNonLocked(): Boolean = true
+    override fun isCredentialsNonExpired(): Boolean = true
+    override fun isEnabled(): Boolean = habilitado
+}
+
+
 
 enum class Rol {
     ADMINISTRADOR,
