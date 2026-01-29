@@ -24,6 +24,9 @@ data class SolicitudCertificado(
     @Column(name="comentario_admin")
     val comentarioAdmin: String? = null,
 
+    @Column(name="ruta_certificado")
+    val rutaCertificado: String? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "solicitante_id", nullable=false)
     val solicitante : Usuario,
