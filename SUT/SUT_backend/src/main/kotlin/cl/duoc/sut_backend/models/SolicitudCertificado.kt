@@ -19,13 +19,13 @@ data class SolicitudCertificado(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    val estado: EstadoSolicitud = EstadoSolicitud.PENDIENTE,
+    var estado: EstadoSolicitud = EstadoSolicitud.PENDIENTE,
 
     @Column(name="comentario_admin")
-    val comentarioAdmin: String? = null,
+    var comentarioAdmin: String? = null,
 
     @Column(name="ruta_certificado")
-    val rutaCertificado: String? = null,
+    var rutaCertificado: String? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "solicitante_id", nullable=false)

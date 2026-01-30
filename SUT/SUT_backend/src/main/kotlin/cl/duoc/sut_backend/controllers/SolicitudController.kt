@@ -1,7 +1,9 @@
 package cl.duoc.sut_backend.controllers
 
 import cl.duoc.sut_backend.dtos.CrearSolicitudRequest
+import cl.duoc.sut_backend.dtos.ResponderSolicitudRequest
 import cl.duoc.sut_backend.dtos.SolicitudResponse
+import cl.duoc.sut_backend.models.EstadoSolicitud
 import cl.duoc.sut_backend.models.SolicitudCertificado
 import cl.duoc.sut_backend.repositories.SolicitudCertificadoRepository
 import cl.duoc.sut_backend.repositories.UsuarioRepository
@@ -52,4 +54,31 @@ class SolicitudController(
 
         return ResponseEntity.ok(response)
     }
+
+    // --- AQUÍ ESTÁ LA FUNCIÓN DE APROBAR ---
+    @PutMapping("/{id}/responder")
+    fun responderSolicitud(
+        @PathVariable id: Long,
+        @RequestBody request: ResponderSolicitudRequest
+    ): ResponseEntity<String> {
+
+        // Fíjate en el .orElseThrow { ... } al final de la línea.
+        // Eso convierte el "Optional" en una "SolicitudCertificado" real.
+        val solicitud = solicitudRepository.findById(id)
+            .orElseThrow { RuntimeException("Solicitud no encontrada") }
+
+        // Ahora 'solicitud' ya no debería estar rojo
+        solicitud.estado = request.estado
+        solicitud.comentarioAdmin = request.comentarioAdmin
+
+        if (request.estado == EstadoSolicitud.APROBADA) {
+            solicitud.rutaCertificado = "/app/certificados/certificado_${id}.pdf"
+        } else {
+            solicitud.rutaCertificado = null
+        }
+
+        solicitudRepository.save(solicitud)
+        return ResponseEntity.ok("Solicitud actualizada a: ${request.estado}")
+    }
+
 }

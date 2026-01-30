@@ -15,3 +15,8 @@ data class SolicitudResponse(
     val estado: EstadoSolicitud,
     val comentarioAdmin: String?
 )
+
+data class ResponderSolicitudRequest(
+    val estado: EstadoSolicitud,
+    val comentarioAdmin: String?
+)
