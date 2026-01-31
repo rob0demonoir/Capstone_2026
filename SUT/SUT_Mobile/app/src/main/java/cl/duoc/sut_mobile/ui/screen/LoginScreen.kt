@@ -1,46 +1,20 @@
-package cl.duoc.sut_mobile.ui.login
+package cl.duoc.sut_mobile.ui.screen
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
-import cl.duoc.sut_mobile.utils.SessionManager
-import cl.duoc.sut_movil.ui.login.LoginViewModel
+import cl.duoc.sut_mobile.ui.viewmodel.LoginViewModel
 
-// Esta función se encargará de instanciar el ViewModel correctamente
+// 1. COMPONENTE CON ESTADO (Stateful)
+// Este es el que llama MainActivity. Recibe el ViewModel y "desempaqueta" los datos.
 @Composable
-fun LoginRoute(
-    onLoginSuccess: () -> Unit // Callback para navegar
-) {
-    val context = LocalContext.current
-    // Creamos el SessionManager y el ViewModel aquí (versión simple)
-    val sessionManager = remember { SessionManager(context) }
-    val viewModel = remember { LoginViewModel(sessionManager) }
-
-    // Verificar auto-login
-    LaunchedEffect(Unit) {
-        if (sessionManager.getToken() != null) {
-            onLoginSuccess()
-        }
-    }
-
-    // Si el login fue exitoso, navegamos
-    LaunchedEffect(viewModel.loginSuccess) {
-        if (viewModel.loginSuccess) {
-            onLoginSuccess()
-        }
-    }
-
-    LoginScreen(
+fun LoginScreen(viewModel: LoginViewModel) {
+    // Llamamos a la parte visual pasándole los datos del ViewModel
+    LoginContent(
         email = viewModel.email,
         onEmailChange = { viewModel.email = it },
         password = viewModel.password,
@@ -51,9 +25,10 @@ fun LoginRoute(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+// 2. COMPONENTE SIN ESTADO (Stateless / Pure UI)
+// Este solo sabe dibujar. Es fácil de previsualizar y reutilizar.
 @Composable
-fun LoginScreen(
+fun LoginContent(
     email: String,
     onEmailChange: (String) -> Unit,
     password: String,
@@ -65,68 +40,52 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "S.U.T.",
-            fontSize = 40.sp,
-            style = MaterialTheme.typography.displayMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = "Sistema de Unidad Territorial",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(bottom = 40.dp)
-        )
+        Text(text = "Iniciar Sesión", style = MaterialTheme.typography.headlineMedium)
 
-        if (errorMessage != null) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        }
+        Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
             value = email,
             onValueChange = onEmailChange,
             label = { Text("Correo Electrónico") },
-            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            enabled = !isLoading
+            singleLine = true
         )
+
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = password,
             onValueChange = onPasswordChange,
             label = { Text("Contraseña") },
-            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            enabled = !isLoading
+            singleLine = true
         )
-        Spacer(modifier = Modifier.height(32.dp))
 
-        Button(
-            onClick = onLoginClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            enabled = !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
-            } else {
-                Text("INGRESAR", fontSize = 18.sp)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else {
+            Button(
+                onClick = onLoginClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Ingresar")
             }
+        }
+
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error
+            )
         }
     }
 }

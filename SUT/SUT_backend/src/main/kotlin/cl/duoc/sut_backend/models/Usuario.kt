@@ -31,7 +31,7 @@ data class Usuario (
     val email: String,
 
     @Column(nullable = false)
-    val contrasena: String,
+    var contrasena: String,
 
     @Column(nullable = false)
     val direccion: String,

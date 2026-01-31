@@ -19,12 +19,4 @@ class SessionManager(context: Context) {
         val token = prefs.getString(KEY_TOKEN, null)
         return if (token != null) "Bearer $token" else null
     }
-package cl.duoc.sut_mobile.utils
-
-class SessionManager {
-}
-    // Borrar sesión (Logout)
-    fun clear() {
-        prefs.edit().clear().apply()
-    }
 }
