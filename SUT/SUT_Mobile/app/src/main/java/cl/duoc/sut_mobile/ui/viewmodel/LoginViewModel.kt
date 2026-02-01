@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.sut_mobile.model.LoginRequest
+import cl.duoc.sut_mobile.model.LoginResponse
 import cl.duoc.sut_mobile.network.ApiService
 import cl.duoc.sut_mobile.utils.SessionManager
 import kotlinx.coroutines.launch
@@ -41,8 +42,8 @@ class LoginViewModel(
                 val response = apiService.login(LoginRequest(email.trim(), password.trim()))
 
                 if (response.isSuccessful && response.body() != null) {
-                    val token = response.body()!!
-                    sessionManager.saveToken(token)
+                    val loginResponse  = response.body()!!
+                    sessionManager.saveToken(loginResponse.token)
                     loginSuccess = true
                 } else {
                     errorMessage = "Credenciales incorrectas"
