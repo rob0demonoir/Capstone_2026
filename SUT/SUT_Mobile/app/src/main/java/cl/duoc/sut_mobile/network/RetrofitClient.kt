@@ -44,8 +44,14 @@ class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor 
             return chain.proceed(originalRequest)
         }
 
+        val headerValue = if (token.startsWith("Bearer ")) {
+            token // Ya lo tiene, lo usamos tal cual
+        } else {
+            "Bearer $token" // No lo tiene, se lo agregamos
+        }
+
         val newRequest = originalRequest.newBuilder()
-            .header("Authorization", "Bearer $token")
+            .header("Authorization", headerValue)
             .build()
 
         return chain.proceed(newRequest)
@@ -58,8 +64,8 @@ class RetrofitClient(context: Context) {
     private val sessionManager = SessionManager(context)
 
     private val client = OkHttpClient.Builder()
-        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
         .addInterceptor(AuthInterceptor(sessionManager)) // <--- AQUÍ ESTÁ LA CLAVE
+        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
         .build()
 
     val instance: Retrofit by lazy {

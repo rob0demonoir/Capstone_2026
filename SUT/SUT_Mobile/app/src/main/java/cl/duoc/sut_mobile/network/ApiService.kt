@@ -3,6 +3,7 @@ package cl.duoc.sut_mobile.network
 import cl.duoc.sut_mobile.model.LoginRequest
 import cl.duoc.sut_mobile.model.LoginResponse
 import cl.duoc.sut_mobile.model.Usuario
+import cl.duoc.sut_mobile.model.Noticia
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -15,4 +16,8 @@ interface ApiService {
 
     @GET("api/usuarios/perfil")
     suspend fun getPerfil(): Response<Usuario>
+
+    @GET("api/noticias")
+    suspend fun getNoticias(): Response<List<Noticia>>
+
 }

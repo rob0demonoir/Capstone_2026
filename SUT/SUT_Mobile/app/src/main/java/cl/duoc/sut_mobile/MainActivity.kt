@@ -56,14 +56,14 @@ fun AppContent() {
         }
     )
 
-    // 3. CREAMOS EL VIEWMODEL DEL HOME
+    /**
     val homeViewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return HomeViewModel(apiService) as T
             }
         }
-    )
+    )**/
 
     // 4. LÓGICA DE NAVEGACIÓN
     var isLoggedIn by remember { mutableStateOf(false) }
@@ -75,10 +75,19 @@ fun AppContent() {
 
     // 5. DECIDIMOS QUÉ PANTALLA MOSTRAR
     if (isLoggedIn) {
-        // CORRECCIÓN 3: Esto ahora llamará a la pantalla del archivo externo
+        // ✨✨✨ MAGIA AQUÍ ✨✨✨
+        // Creamos el HomeViewModel SOLO cuando ya estamos logueados.
+        // Esto forzará que el bloque 'init' se ejecute AHORA MISMO y pida el perfil con el token nuevo.
+        val homeViewModel: HomeViewModel = viewModel(
+            factory = object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return HomeViewModel(apiService) as T
+                }
+            }
+        )
+
         HomeScreen(viewModel = homeViewModel)
     } else {
-        // CORRECCIÓN 4: Ahora coincide el nombre de la variable
         LoginScreen(viewModel = loginViewModel)
     }
 }
