@@ -8,13 +8,13 @@ import java.time.LocalDateTime
 data class Noticia (
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long?,
+    val id: Long,
 
     @Column(nullable = false)
-    val titulo: String,
+    val titulo: String = "",
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    val contenido: String,
+    @Column(length= 2000, nullable = false, columnDefinition = "TEXT")
+    val contenido: String = "",
 
     @Column(name="fecha_publicacion", nullable = false)
     val fechaPublicacion: LocalDateTime = LocalDateTime.now(),

@@ -22,12 +22,12 @@ class NoticiaController(
 
         val response = noticias.map { n ->
             NoticiaResponse(
-                id = n.id!!,
+                id = n.id,
                 titulo = n.titulo,
                 contenido = n.contenido,
                 fecha = n.fechaPublicacion,
                 autor = "${n.autor.nombre} ${n.autor.apellido}",
-                urlImagen = n.urlImagen.toString()
+                urlImagen = n.urlImagen
             )
         }
         return ResponseEntity.ok(response)
@@ -37,10 +37,10 @@ class NoticiaController(
     fun crearNoticia(@RequestBody request: CrearNoticiaRequest): ResponseEntity<String> {
         // CORRECCIÓN 1: Agregamos '!!' para asegurar que authentication no es nulo
         val email = SecurityContextHolder.getContext().authentication!!.name
-        val autor = usuarioRepository.findByEmail(email).orElseThrow()
+        val autor = usuarioRepository.findByEmail(email).orElseThrow{ RuntimeException("Usuario no encontrado.") }
 
         val nuevaNoticia = Noticia(
-            id = null, // CORRECCIÓN 2: Pasamos explícitamente id = null
+            id = 0, // CORRECCIÓN 2: Pasamos explícitamente id = 0
             titulo = request.titulo,
             contenido = request.contenido,
             urlImagen = request.urlImagen,

@@ -14,5 +14,5 @@ data class NoticiaResponse(
     val contenido: String,
     val fecha: LocalDateTime,
     val autor: String,
-    val urlImagen: String
+    val urlImagen: String? = null
 )
