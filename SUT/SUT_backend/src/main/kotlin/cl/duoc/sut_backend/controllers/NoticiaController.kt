@@ -6,6 +6,7 @@ import cl.duoc.sut_backend.models.Noticia
 import cl.duoc.sut_backend.repositories.NoticiaRepository
 import cl.duoc.sut_backend.repositories.UsuarioRepository
 import org.springframework.http.ResponseEntity
+import java.time.LocalDateTime
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
@@ -35,16 +36,19 @@ class NoticiaController(
 
     @PostMapping
     fun crearNoticia(@RequestBody request: CrearNoticiaRequest): ResponseEntity<String> {
-        // CORRECCIÓN 1: Agregamos '!!' para asegurar que authentication no es nulo
         val email = SecurityContextHolder.getContext().authentication!!.name
-        val autor = usuarioRepository.findByEmail(email).orElseThrow{ RuntimeException("Usuario no encontrado.") }
+        val autor = usuarioRepository.findByEmail(email)
+            .orElseThrow{ RuntimeException("Usuario no encontrado.") }
 
         val nuevaNoticia = Noticia(
-            id = 0, // CORRECCIÓN 2: Pasamos explícitamente id = 0
+            id = 0, // Mejor usa 'null' si tu Entity usa @GeneratedValue. Si es primitivo (long), usa 0.
             titulo = request.titulo,
             contenido = request.contenido,
+            fechaPublicacion = LocalDateTime.now(), // <--- ¡FALTABA ESTO!
             urlImagen = request.urlImagen,
-            autor = autor
+            autor = autor // OJO: Revisa si tu modelo Noticia pide un String o un Objeto Usuario.
+            // Si en tu modelo 'autor' es tipo String, usa la línea de arriba.
+            // Si 'autor' es tipo Usuario, usa: autor = autor
         )
 
         noticiaRepository.save(nuevaNoticia)

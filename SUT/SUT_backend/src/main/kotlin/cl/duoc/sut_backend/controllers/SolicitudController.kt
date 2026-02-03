@@ -56,7 +56,8 @@ class SolicitudController(
                 tipo = s.tipo,
                 fechaSolicitud = s.fechaSolicitud,
                 estado = s.estado,
-                comentarioAdmin = s.comentarioAdmin
+                comentarioAdmin = s.comentarioAdmin,
+                nombreSolicitante = "${s.solicitante.nombre} ${s.solicitante.apellido}"
             )
         }
 
@@ -108,6 +109,25 @@ class SolicitudController(
 
         solicitudRepository.save(solicitud)
         return ResponseEntity.ok("Solicitud actualizada y certificado generado.")
+    }
+
+    @GetMapping
+    fun listarTodas(): ResponseEntity<List<SolicitudResponse>> {
+        // Obtenemos todas, ordenadas por ID descendente (las nuevas primero)
+        // OJO: En un sistema real, aquí filtraríamos por rol ADMIN.
+        val todas = solicitudRepository.findAll()
+
+        val response = todas.sortedByDescending { it.id }.map { s ->
+            SolicitudResponse(
+                id = s.id!!,
+                tipo = s.tipo,
+                fechaSolicitud = s.fechaSolicitud,
+                estado = s.estado,
+                comentarioAdmin = s.comentarioAdmin,
+                nombreSolicitante = "${s.solicitante.nombre} ${s.solicitante.apellido}" // <--- Mapeamos el nombre
+            )
+        }
+        return ResponseEntity.ok(response)
     }
 
     @GetMapping("/{id}/descargar")

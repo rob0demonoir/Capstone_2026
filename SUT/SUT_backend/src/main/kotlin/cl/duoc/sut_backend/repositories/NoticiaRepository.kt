@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository
 @Repository
 interface NoticiaRepository: JpaRepository<Noticia, Long> {
     fun findAllByOrderByFechaPublicacionDesc():List<Noticia>
+    fun findByAutor(autor:String):List<Noticia>
 }

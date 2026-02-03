@@ -19,4 +19,10 @@ class SessionManager(context: Context) {
         val token = prefs.getString(KEY_TOKEN, null)
         return if (token != null) "Bearer $token" else null
     }
+
+    fun logout() {
+        val editor = prefs.edit()
+        editor.remove("auth_token") // Borra el token
+        editor.apply()
+    }
 }

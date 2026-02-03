@@ -1,4 +1,4 @@
-package cl.duoc.sut_mobile.ui.viewmodel
+/**package cl.duoc.sut_mobile.ui.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,5 +55,74 @@ class LoginViewModel(
                 isLoading = false
             }
         }
+    }
+}**/
+package cl.duoc.sut_mobile.ui.viewmodel
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import cl.duoc.sut_mobile.model.LoginRequest
+import cl.duoc.sut_mobile.network.ApiService
+import cl.duoc.sut_mobile.utils.SessionManager
+import kotlinx.coroutines.launch
+
+class LoginViewModel(
+    private val apiService: ApiService,
+    private val sessionManager: SessionManager
+) : ViewModel() {
+
+    // Estado de la UI
+    // null = no ha intentado, true = éxito, false = error
+    var loginResult by mutableStateOf<Boolean?>(null)
+    var isLoading by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
+
+    fun login(email: String, contrasena: String) {
+        // Validaciones básicas antes de enviar
+        if (email.isBlank() || contrasena.isBlank()) {
+            errorMessage = "Por favor ingresa correo y contraseña"
+            loginResult = false
+            return
+        }
+
+        isLoading = true
+        errorMessage = null // Limpiar error previo
+
+        viewModelScope.launch {
+            try {
+                val request = LoginRequest(email, contrasena)
+                val response = apiService.login(request)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val loginResponse = response.body()!!
+
+                    // IMPORTANTE: Guardamos el token
+                    // El SessionManager ya se encarga de persistirlo
+                    sessionManager.saveToken(loginResponse.token)
+
+                    loginResult = true
+                } else {
+                    // Error del servidor (ej: 401 Credenciales inválidas)
+                    errorMessage = "Credenciales incorrectas"
+                    loginResult = false
+                }
+            } catch (e: Exception) {
+                // Error de conexión (Internet, servidor caído, timeout)
+                e.printStackTrace()
+                errorMessage = "Error de conexión: ${e.message}"
+                loginResult = false
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    // Función para "limpiar" el estado si queremos intentar de nuevo sin recargar la pantalla
+    fun resetLoginState() {
+        loginResult = null
+        errorMessage = null
     }
 }
