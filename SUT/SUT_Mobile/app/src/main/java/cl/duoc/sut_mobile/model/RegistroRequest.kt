@@ -1,12 +1,12 @@
 package cl.duoc.sut_mobile.model
 
-data class Usuario(
-    val id: Long,
+data class RegistroRequest(
     val rut: String,
     val nombre: String,
     val apellido: String,
     val email: String,
+    val contrasena: String,
     val direccion: String,
     val telefono: String,
-    val rol: String // "ADMIN" o "VECINO"
+    val fechaNacimiento: String // Formato "YYYY-MM-DD"
 )

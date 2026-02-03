@@ -1,5 +1,6 @@
 package cl.duoc.sut_mobile.network
 
+import cl.duoc.sut_mobile.model.CrearNoticiaRequest
 import cl.duoc.sut_mobile.model.CrearSolicitudRequest
 import cl.duoc.sut_mobile.model.LoginRequest
 import cl.duoc.sut_mobile.model.LoginResponse
@@ -9,6 +10,7 @@ import retrofit2.http.Path
 import retrofit2.http.Streaming
 import cl.duoc.sut_mobile.model.Usuario
 import cl.duoc.sut_mobile.model.Noticia
+import cl.duoc.sut_mobile.model.RegistroRequest
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -47,5 +49,20 @@ interface ApiService {
         @Path("id") id: Long,
         @Body request: ResponderSolicitudRequest
     ): Response<String>
+
+    @POST("api/noticias")
+    suspend fun publicarNoticia(@Body request: CrearNoticiaRequest): Response<ResponseBody>
+
+    @POST("api/autenticacion/registro")
+    suspend fun registrarUsuario(@Body request: RegistroRequest): Response<ResponseBody>
+
+    // 1. Listar todos (Solo Admin)
+    @GET("api/usuarios")
+    suspend fun getUsuarios(): Response<List<Usuario>>
+
+    // 2. Cambiar Rol
+    // Enviamos el String directo ("ADMIN" o "VECINO") en el cuerpo
+    @PUT("api/usuarios/{id}/rol")
+    suspend fun actualizarRol(@Path("id") id: Long, @Body nuevoRol: String): Response<ResponseBody>
 
 }

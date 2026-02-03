@@ -1,96 +1,3 @@
-/**package cl.duoc.sut_mobile
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import cl.duoc.sut_mobile.network.ApiService
-import cl.duoc.sut_mobile.network.RetrofitClient
-import cl.duoc.sut_mobile.ui.screen.LoginScreen
-import cl.duoc.sut_mobile.ui.screen.HomeScreen // Importamos la pantalla nueva
-import cl.duoc.sut_mobile.ui.viewmodel.LoginViewModel
-import cl.duoc.sut_mobile.ui.viewmodel.HomeViewModel
-import cl.duoc.sut_mobile.ui.theme.SUT_MobileTheme
-import cl.duoc.sut_mobile.utils.SessionManager
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            SUT_MobileTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    AppContent()
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AppContent() {
-    val context = LocalContext.current
-
-    // 1. INICIALIZAMOS LAS DEPENDENCIAS
-    val sessionManager = remember { SessionManager(context) }
-    val retrofitClient = remember { RetrofitClient(context) }
-    val apiService = remember { retrofitClient.instance.create(ApiService::class.java) }
-
-    // 2. CREAMOS EL VIEWMODEL DEL LOGIN
-    // CORRECCIÓN 1: Le puse nombre explícito 'loginViewModel'
-    val loginViewModel: LoginViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return LoginViewModel(sessionManager, apiService) as T
-            }
-        }
-    )
-
-    /**
-    val homeViewModel: HomeViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return HomeViewModel(apiService) as T
-            }
-        }
-    )**/
-
-    // 4. LÓGICA DE NAVEGACIÓN
-    var isLoggedIn by remember { mutableStateOf(false) }
-
-    // CORRECCIÓN 2: Ahora usamos 'loginViewModel' aquí también
-    if (loginViewModel.loginSuccess) {
-        isLoggedIn = true
-    }
-
-    // 5. DECIDIMOS QUÉ PANTALLA MOSTRAR
-    if (isLoggedIn) {
-        // ✨✨✨ MAGIA AQUÍ ✨✨✨
-        // Creamos el HomeViewModel SOLO cuando ya estamos logueados.
-        // Esto forzará que el bloque 'init' se ejecute AHORA MISMO y pida el perfil con el token nuevo.
-        val homeViewModel: HomeViewModel = viewModel(
-            factory = object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return HomeViewModel(apiService) as T
-                }
-            }
-        )
-
-        HomeScreen(viewModel = homeViewModel)
-    } else {
-        LoginScreen(viewModel = loginViewModel)
-    }
-}**/
 package cl.duoc.sut_mobile
 
 import android.content.Context
@@ -107,26 +14,67 @@ import cl.duoc.sut_mobile.network.ApiService
 import cl.duoc.sut_mobile.network.RetrofitClient
 import cl.duoc.sut_mobile.ui.screen.HomeScreen
 import cl.duoc.sut_mobile.ui.screen.LoginScreen
+import cl.duoc.sut_mobile.ui.screen.RegistroScreen
 import cl.duoc.sut_mobile.ui.screen.SolicitudesScreen
-import cl.duoc.sut_mobile.ui.theme.SUT_MobileTheme // Asegúrate que este nombre coincida con tu tema
+import cl.duoc.sut_mobile.ui.screen.GestionUsuariosScreen // Importante
+import cl.duoc.sut_mobile.ui.viewmodel.GestionUsuariosViewModel // Importante
+import cl.duoc.sut_mobile.ui.theme.SUT_MobileTheme
 import cl.duoc.sut_mobile.ui.viewmodel.HomeViewModel
 import cl.duoc.sut_mobile.ui.viewmodel.SolicitudesViewModel
 import cl.duoc.sut_mobile.utils.SessionManager
+//para el workmanager
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import cl.duoc.sut_mobile.worker.NotificacionWorker
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Inicializamos Retrofit y ApiService aquí
         val retrofitClient = RetrofitClient(this)
         val apiService = retrofitClient.instance.create(ApiService::class.java)
 
         setContent {
-            // Usa el nombre de tu tema (puede ser SUTMobileTheme o similar)
             SUT_MobileTheme {
+                val context = LocalContext.current
+
+                val launcherPermisos = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission(),
+                    onResult = { esConcedido ->
+                        if (esConcedido) {
+                            iniciarWorkerNoticias(context)
+                        }
+                    }
+                )
+
+                LaunchedEffect(Unit) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        launcherPermisos.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        iniciarWorkerNoticias(context)
+                    }
+                }
                 AppNavigation(apiService = apiService, context = this)
             }
         }
+    }
+
+    private fun iniciarWorkerNoticias(context: Context) {
+        val workRequest = PeriodicWorkRequestBuilder<NotificacionWorker>(
+            15, TimeUnit.MINUTES
+        ).build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "worker_noticias_vecinos",
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
     }
 }
 
@@ -134,16 +82,14 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation(apiService: ApiService, context: Context) {
     val sessionManager = remember { SessionManager(context) }
 
-    // Estado para saber si estamos logueados
     var isLoggedIn by remember { mutableStateOf(!sessionManager.getToken().isNullOrBlank()) }
+    var isRegistering by remember { mutableStateOf(false) }
 
-    // --- ESTADO DE NAVEGACIÓN NUEVO ---
-    // Puede ser: "home", "solicitudes"
+    // Puede ser: "home", "solicitudes", "gestion_usuarios"
     var currentScreen by remember { mutableStateOf("home") }
 
 
     // --- VIEWMODELS ---
-    // 1. ViewModel del Home
     val homeViewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -152,7 +98,6 @@ fun AppNavigation(apiService: ApiService, context: Context) {
         }
     )
 
-    // 2. ViewModel de Solicitudes (NUEVO)
     val solicitudesViewModel: SolicitudesViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -161,33 +106,38 @@ fun AppNavigation(apiService: ApiService, context: Context) {
         }
     )
 
-    // --- LÓGICA DE PANTALLAS ---
+    val gestionUsuariosViewModel: GestionUsuariosViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return GestionUsuariosViewModel(apiService) as T
+            }
+        }
+    )
+
+    // --- LÓGICA DE NAVEGACIÓN ---
     if (isLoggedIn) {
-        // Si está logueado, miramos 'currentScreen' para saber qué mostrar
+        // --- ZONA PRIVADA ---
         when (currentScreen) {
             "home" -> {
                 HomeScreen(
                     viewModel = homeViewModel,
                     onIrASolicitudes = {
-                        // AQUÍ OCURRE EL CAMBIO: El usuario pidió ir a solicitudes
                         currentScreen = "solicitudes"
-                        // Opcional: Recargar datos al entrar
                         solicitudesViewModel.cargarSolicitudes()
+                    },
+                    // --- NUEVO: Callback para ir a gestión de usuarios ---
+                    onIrAGestionUsuarios = {
+                        currentScreen = "gestion_usuarios"
+                        gestionUsuariosViewModel.cargarUsuarios() // Cargamos la lista al entrar
                     },
                     onLogout = {
                         Log.d("DEBUG_LOGOUT", "¡Click recibido! Cerrando sesión...")
-
-                        // 1. Borramos token del disco
                         sessionManager.logout()
-
-                        // 2. ¡LIMPIEZA DE MEMORIA! (Nuevo)
                         homeViewModel.limpiarDatos()
-
-                        // 3. Reseteamos vista de solicitudes (por si acaso)
                         solicitudesViewModel.solicitudes = emptyList()
 
-                        // 4. Cambiamos estado para ir al Login
                         isLoggedIn = false
+                        isRegistering = false
                         currentScreen = "home"
                     }
                 )
@@ -196,28 +146,48 @@ fun AppNavigation(apiService: ApiService, context: Context) {
                 SolicitudesScreen(
                     viewModel = solicitudesViewModel,
                     onBack = {
-                        // AQUÍ VOLVEMOS: El usuario tocó "atrás"
                         currentScreen = "home"
-                        // Opcional: Recargar Home por si algo cambió
+                        homeViewModel.cargarDatos()
+                    }
+                )
+            }
+            // --- NUEVO: Pantalla de Gestión ---
+            "gestion_usuarios" -> {
+                GestionUsuariosScreen(
+                    viewModel = gestionUsuariosViewModel,
+                    onBack = {
+                        currentScreen = "home"
+                        // Opcional: Recargar home por si cambiaste tu propio rol (raro pero posible)
                         homeViewModel.cargarDatos()
                     }
                 )
             }
         }
     } else {
-        // Si NO está logueado, mostramos Login
-        LoginScreen(
-            apiService = apiService,
-            context = context,
-            onLoginSuccess = {
-                // 1. Cambiamos estado para mostrar el Home
-                isLoggedIn = true
-                currentScreen = "home"
-
-                // --- AGREGAMOS ESTA LÍNEA MÁGICA ---
-                // Le ordenamos al HomeViewModel que cargue los datos INMEDIATAMENTE
-                homeViewModel.cargarDatos()
-            }
-        )
+        // --- ZONA PÚBLICA ---
+        if (isRegistering) {
+            RegistroScreen(
+                apiService = apiService,
+                onRegistroExitoso = {
+                    isRegistering = false
+                },
+                onCancelar = {
+                    isRegistering = false
+                }
+            )
+        } else {
+            LoginScreen(
+                apiService = apiService,
+                context = context,
+                onLoginSuccess = {
+                    isLoggedIn = true
+                    currentScreen = "home"
+                    homeViewModel.cargarDatos()
+                },
+                onIrARegistro = {
+                    isRegistering = true
+                }
+            )
+        }
     }
 }

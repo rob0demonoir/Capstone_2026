@@ -44,7 +44,7 @@ data class Usuario (
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    val rol: Rol = Rol.VECINO,
+    var rol: Rol,
 
     @Column(nullable = false)
     val habilitado: Boolean = true

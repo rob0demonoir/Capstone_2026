@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.sut_mobile.model.CrearNoticiaRequest
 import cl.duoc.sut_mobile.model.EstadoSolicitud
 import cl.duoc.sut_mobile.model.Noticia
 import cl.duoc.sut_mobile.model.ResponderSolicitudRequest
@@ -79,6 +80,35 @@ class HomeViewModel(private val apiService: ApiService) : ViewModel() {
                 }
             } catch (e: Exception) {
                 errorMessage = "Error al responder solicitud"
+            }
+        }
+    }
+
+    // Función para publicar noticia
+    fun publicarNoticia(titulo: String, contenido: String) {
+        viewModelScope.launch {
+            isLoading = true
+            try {
+                // Creamos el request con los 3 campos (urlImagen va nulo por defecto)
+                val request = CrearNoticiaRequest(titulo, contenido, null)
+
+                val response = apiService.publicarNoticia(request)
+
+                if (response.isSuccessful) {
+                    // Como el backend devuelve solo un mensaje de texto y no la noticia nueva,
+                    // la estrategia segura es RECARGAR la lista completa para ver la nueva noticia.
+                    val noticiasResponse = apiService.getNoticias()
+                    if (noticiasResponse.isSuccessful) {
+                        noticias = noticiasResponse.body() ?: emptyList()
+                    }
+                } else {
+                    errorMessage = "Error al publicar: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = "Error de conexión al publicar"
+            } finally {
+                isLoading = false
             }
         }
     }

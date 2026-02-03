@@ -17,14 +17,6 @@ class SecurityConfig (
     private val jwtAuthFilter: JwtAuthenticationFilter,
     private val authenticationProvider: AuthenticationProvider
 ){
-
-    //ENCRIPTACION
-
-    /**@Bean
-    fun passwordEncoder(): PasswordEncoder {
-        return BCryptPasswordEncoder()
-    }**/
-
     // Filtros HTTP
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {

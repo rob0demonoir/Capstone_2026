@@ -8,3 +8,9 @@ data class Noticia (
     val autor: String,
     val urlImagen: String?
 )
+
+data class CrearNoticiaRequest(
+    val titulo: String,
+    val contenido: String,
+    val urlImagen: String? = null // <--- Agregado para coincidir con tu Backend
+)

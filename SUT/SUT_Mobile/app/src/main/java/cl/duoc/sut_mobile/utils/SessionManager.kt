@@ -25,4 +25,16 @@ class SessionManager(context: Context) {
         editor.remove("auth_token") // Borra el token
         editor.apply()
     }
+
+    // Guardar el ID de la última noticia conocida
+    fun saveLastNoticiaId(id: Long) {
+        val editor = prefs.edit()
+        editor.putLong("last_noticia_id", id)
+        editor.apply()
+    }
+
+    // Obtener el ID guardado (si no existe, devuelve 0)
+    fun getLastNoticiaId(): Long {
+        return prefs.getLong("last_noticia_id", 0)
+    }
 }
