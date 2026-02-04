@@ -9,6 +9,8 @@ import cl.duoc.sut_backend.repositories.UsuarioRepository
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
+import java.nio.file.Files
+import java.nio.file.Paths
 
 @RestController
 @RequestMapping("/api/avisos")
@@ -70,6 +72,17 @@ class AvisoController(
 
         // Lógica de seguridad: Solo borras si eres el dueño O eres Administrador
         if (aviso.publicador.email == email || usuario.rol == Rol.ADMINISTRADOR) {
+            val imagenUrl = aviso.urlImagen
+            if (imagenUrl != null) {
+                try {
+                    // La URL viene como "/api/uploads/nombre.jpg". Extraemos el nombre.
+                    val nombreArchivo = imagenUrl.substringAfterLast("/")
+                    val rutaArchivo = Paths.get("/app/uploads").resolve(nombreArchivo)
+                    Files.deleteIfExists(rutaArchivo)
+                } catch (e: Exception) {
+                    println("No se pudo borrar la imagen física: ${e.message}")
+                }
+            }
             avisoRepository.delete(aviso)
             return ResponseEntity.ok("Aviso eliminado")
         } else {

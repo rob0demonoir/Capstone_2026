@@ -10,7 +10,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings // Icono para gestión
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,13 +31,17 @@ import cl.duoc.sut_mobile.ui.viewmodel.HomeViewModel
 fun HomeScreen(
     viewModel: HomeViewModel,
     onIrASolicitudes: () -> Unit,
-    onIrAGestionUsuarios: () -> Unit, // <--- NUEVO PARÁMETRO: Recibimos la navegación
+    onIrAGestionUsuarios: () -> Unit,
+    onIrAAvisos: () -> Unit,
     onLogout: () -> Unit
 ) {
     val usuario = viewModel.usuario
     val noticias = viewModel.noticias
     val isLoading = viewModel.isLoading
     val error = viewModel.errorMessage
+
+    // Estado para el diálogo de editar perfil
+    var showEditDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -51,22 +56,25 @@ fun HomeScreen(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                // 1. TARJETA DE USUARIO
-                TarjetaUsuarioHeader(usuario = usuario, onLogout = onLogout)
+                // 1. TARJETA DE USUARIO (Con botón de editar)
+                TarjetaUsuarioHeader(
+                    usuario = usuario,
+                    onLogout = onLogout,
+                    onEdit = { showEditDialog = true } // Abrir diálogo
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // 2. CONTENIDO SEGÚN ROL
                 if (usuario.rol.uppercase().contains("ADMIN")) {
-                    // Le pasamos la navegación al Dashboard de Admin
-                    AdminDashboard(viewModel, onIrAGestionUsuarios)
+                    AdminDashboard(viewModel, onIrAGestionUsuarios, onIrAAvisos)
                 } else {
-                    VecinoDashboard(noticias, onIrASolicitudes)
+                    VecinoDashboard(noticias, onIrASolicitudes, onIrAAvisos)
                 }
             }
         }
 
-        // Botón recargar
+        // Botón recargar (abajo a la derecha)
         FloatingActionButton(
             onClick = { viewModel.cargarDatos() },
             modifier = Modifier
@@ -85,12 +93,27 @@ fun HomeScreen(
             )
         }
     }
+
+    // --- DIÁLOGOS ---
+
+    // Diálogo Editar Perfil
+    if (showEditDialog && usuario != null) {
+        EditarPerfilDialog(
+            usuario = usuario,
+            onDismiss = { showEditDialog = false },
+            onGuardar = { tel, dir, mail ->
+                viewModel.actualizarPerfil(tel, dir, mail)
+                showEditDialog = false
+            }
+        )
+    }
 }
 
 @Composable
 fun TarjetaUsuarioHeader(
     usuario: Usuario,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -113,8 +136,22 @@ fun TarjetaUsuarioHeader(
             Column(modifier = Modifier.weight(1f)) {
                 Text("Hola, ${usuario.nombre}", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.Black)
                 Text(usuario.rol, fontSize = 14.sp, color = Color.Gray)
+                // Mostramos el teléfono actual
+                if (usuario.telefono.isNotBlank()) {
+                    Text(usuario.telefono, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                }
             }
 
+            // Botón Editar (Lápiz)
+            IconButton(onClick = onEdit) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Editar Perfil",
+                    tint = Color.Gray
+                )
+            }
+
+            // Botón Salir
             IconButton(onClick = onLogout) {
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
@@ -127,9 +164,58 @@ fun TarjetaUsuarioHeader(
 }
 
 @Composable
+fun EditarPerfilDialog(
+    usuario: Usuario,
+    onDismiss: () -> Unit,
+    onGuardar: (String, String, String) -> Unit
+) {
+    var telefono by remember { mutableStateOf(usuario.telefono) }
+    var direccion by remember { mutableStateOf(usuario.direccion) }
+    var email by remember { mutableStateOf(usuario.email) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Mis Datos") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = telefono,
+                    onValueChange = { telefono = it },
+                    label = { Text("Teléfono (+569...)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = direccion,
+                    onValueChange = { direccion = it },
+                    label = { Text("Dirección") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email (Opcional)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onGuardar(telefono, direccion, email) }) {
+                Text("Guardar Cambios")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        }
+    )
+}
+
+@Composable
 fun AdminDashboard(
     viewModel: HomeViewModel,
-    onIrAGestionUsuarios: () -> Unit // <--- Recibimos la función aquí
+    onIrAGestionUsuarios: () -> Unit,
+    onIrAAvisos: () -> Unit
 ) {
     val solicitudes = viewModel.solicitudesAdmin
     val pendientes = solicitudes.filter { it.estado == EstadoSolicitud.PENDIENTE }
@@ -146,19 +232,29 @@ fun AdminDashboard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- NUEVO BOTÓN: GESTIÓN DE USUARIOS ---
+            // BOTÓN GESTIÓN USUARIOS (Naranjo)
             Button(
                 onClick = onIrAGestionUsuarios,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFEF6C00) // Un naranjo/ámbar para diferenciarlo
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF6C00))
             ) {
                 Icon(Icons.Default.Settings, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Gestionar Usuarios y Roles")
             }
-            // ----------------------------------------
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // BOTÓN TABLÓN DE AVISOS (Turquesa)
+            Button(
+                onClick = onIrAAvisos,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00ACC1))
+            ) {
+                Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Tablón de Avisos")
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
             Text(
@@ -180,7 +276,7 @@ fun AdminDashboard(
                     )
                 }
             } else {
-                LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
                     items(pendientes) { solicitud ->
                         SolicitudAdminItem(
                             solicitud = solicitud,
@@ -216,8 +312,48 @@ fun AdminDashboard(
     }
 }
 
-// ... El resto de componentes (NuevaNoticiaDialog, SolicitudAdminItem, VecinoDashboard, NoticiaItem)
-// NO CAMBIAN, pero los incluyo para que el archivo esté completo.
+@Composable
+fun VecinoDashboard(
+    noticias: List<Noticia>,
+    onIrASolicitudes: () -> Unit,
+    onIrAAvisos: () -> Unit
+) {
+    Text("Noticias de tu Barrio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    Spacer(modifier = Modifier.height(12.dp))
+
+    // Botón Certificados
+    Button(onClick = onIrASolicitudes, modifier = Modifier.fillMaxWidth()) {
+        Text("Gestionar mis Certificados")
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    // Botón Tablón Avisos (Turquesa)
+    Button(
+        onClick = onIrAAvisos,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00ACC1))
+    ) {
+        Icon(Icons.Default.ShoppingCart, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Tablón de Avisos")
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    if (noticias.isEmpty()) {
+        Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+            Text("No hay noticias publicadas aún.", color = Color.Gray)
+        }
+    } else {
+        LazyColumn(contentPadding = PaddingValues(bottom = 80.dp)) {
+            items(noticias) { noticia ->
+                NoticiaItem(noticia)
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    }
+}
 
 @Composable
 fun NuevaNoticiaDialog(onDismiss: () -> Unit, onPublicar: (String, String) -> Unit) {
@@ -277,30 +413,6 @@ fun SolicitudAdminItem(solicitud: Solicitud, onAprobar: () -> Unit, onRechazar: 
                 Button(onClick = onAprobar, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE8F5E9), contentColor = Color(0xFF2E7D32)), modifier = Modifier.weight(1f).padding(start = 8.dp)) {
                     Text("Aprobar")
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun VecinoDashboard(noticias: List<Noticia>, onIrASolicitudes: () -> Unit) {
-    Text("Noticias de tu Barrio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-    Spacer(modifier = Modifier.height(12.dp))
-
-    Button(onClick = onIrASolicitudes, modifier = Modifier.fillMaxWidth()) {
-        Text("Gestionar mis Certificados")
-    }
-    Spacer(modifier = Modifier.height(16.dp))
-
-    if (noticias.isEmpty()) {
-        Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-            Text("No hay noticias publicadas aún.", color = Color.Gray)
-        }
-    } else {
-        LazyColumn(contentPadding = PaddingValues(bottom = 80.dp)) {
-            items(noticias) { noticia ->
-                NoticiaItem(noticia)
-                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }

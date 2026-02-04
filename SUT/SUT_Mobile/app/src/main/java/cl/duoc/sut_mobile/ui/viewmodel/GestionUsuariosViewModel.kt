@@ -53,7 +53,7 @@ class GestionUsuariosViewModel(private val apiService: ApiService) : ViewModel()
     fun alternarRol(usuario: Usuario) {
         viewModelScope.launch {
             // Lógica simple: Invertir el rol actual
-            val nuevoRol = if (usuario.rol == "ADMIN") "VECINO" else "ADMIN"
+            val nuevoRol = if (usuario.rol == "ADMINISTRADOR") "VECINO" else "ADMINISTRADOR"
 
             try {
                 isLoading = true

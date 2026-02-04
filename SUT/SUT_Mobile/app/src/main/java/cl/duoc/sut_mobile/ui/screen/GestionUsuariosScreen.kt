@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -87,7 +88,7 @@ fun GestionUsuariosScreen(
 
 @Composable
 fun UsuarioItem(usuario: Usuario, onCambiarRol: () -> Unit) {
-    val esAdmin = usuario.rol == "ADMIN"
+    val esAdmin = usuario.rol == "ADMINISTRADOR"
 
     Card(
         colors = CardDefaults.cardColors(
@@ -126,7 +127,7 @@ fun UsuarioItem(usuario: Usuario, onCambiarRol: () -> Unit) {
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = if (esAdmin) "ADMIN" else "VECINO")
+                Text(text = if (esAdmin) "ADMINISTRADOR" else "VECINO")
             }
         }
     }

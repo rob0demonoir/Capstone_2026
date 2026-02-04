@@ -30,6 +30,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import cl.duoc.sut_mobile.ui.screen.AvisosScreen
+import cl.duoc.sut_mobile.ui.viewmodel.AvisosViewModel
 import cl.duoc.sut_mobile.worker.NotificacionWorker
 import java.util.concurrent.TimeUnit
 
@@ -114,6 +116,14 @@ fun AppNavigation(apiService: ApiService, context: Context) {
         }
     )
 
+    val avisosViewModel: AvisosViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return AvisosViewModel(apiService) as T
+            }
+        }
+    )
+
     // --- LÓGICA DE NAVEGACIÓN ---
     if (isLoggedIn) {
         // --- ZONA PRIVADA ---
@@ -125,6 +135,7 @@ fun AppNavigation(apiService: ApiService, context: Context) {
                         currentScreen = "solicitudes"
                         solicitudesViewModel.cargarSolicitudes()
                     },
+                    onIrAAvisos = { currentScreen = "avisos" },
                     // --- NUEVO: Callback para ir a gestión de usuarios ---
                     onIrAGestionUsuarios = {
                         currentScreen = "gestion_usuarios"
@@ -149,6 +160,12 @@ fun AppNavigation(apiService: ApiService, context: Context) {
                         currentScreen = "home"
                         homeViewModel.cargarDatos()
                     }
+                )
+            }
+            "avisos" -> {
+                AvisosScreen(
+                    viewModel = avisosViewModel,
+                    onBack = { currentScreen = "home" }
                 )
             }
             // --- NUEVO: Pantalla de Gestión ---

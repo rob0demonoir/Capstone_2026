@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.sut_mobile.model.ActualizarPerfilRequest
 import cl.duoc.sut_mobile.model.CrearNoticiaRequest
 import cl.duoc.sut_mobile.model.EstadoSolicitud
 import cl.duoc.sut_mobile.model.Noticia
@@ -107,6 +108,28 @@ class HomeViewModel(private val apiService: ApiService) : ViewModel() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 errorMessage = "Error de conexión al publicar"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun actualizarPerfil(telefono: String, direccion: String, email: String) {
+        viewModelScope.launch {
+            isLoading = true
+            try {
+                val request = ActualizarPerfilRequest(telefono, direccion, email)
+                val response = apiService.actualizarPerfil(request)
+
+                if (response.isSuccessful) {
+                    // Actualizamos el usuario en memoria para que se refleje al instante en la UI
+                    usuario = response.body()
+                    errorMessage = null // Limpiar errores previos
+                } else {
+                    errorMessage = "Error al actualizar perfil"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error de conexión"
             } finally {
                 isLoading = false
             }

@@ -5,6 +5,8 @@ import cl.duoc.sut_backend.models.Rol
 import cl.duoc.sut_backend.repositories.UsuarioRepository
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
+import cl.duoc.sut_backend.dtos.ActualizarPerfilRequest
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
 
@@ -46,26 +48,44 @@ class UsuarioController(
         @PathVariable id: Long,
         @RequestBody nuevoRol: String
     ): ResponseEntity<Any> {
-        // 1. Buscamos el usuario de forma tradicional
         val usuarioOpt = usuarioRepository.findById(id)
 
         if (usuarioOpt.isPresent) {
             val usuario = usuarioOpt.get()
 
             return try {
-                // 2. Intentamos convertir el texto "ADMIN" al Enum Rol.ADMIN
-                usuario.rol = Rol.valueOf(nuevoRol.uppercase())
+                // --- CORRECCIÓN AQUÍ ---
+                // 1. Limpiamos comillas dobles (") y espacios en blanco
+                val rolLimpio = nuevoRol.replace("\"", "").trim().uppercase()
+
+                // 2. Debug Log (Para que veas en la consola de IntelliJ qué está llegando)
+                println("Recibido: $nuevoRol | Limpio: $rolLimpio")
+
+                // 3. Convertimos
+                usuario.rol = Rol.valueOf(rolLimpio)
                 usuarioRepository.save(usuario)
 
-                // Retornamos OK
                 ResponseEntity.ok(mapOf("mensaje" to "Rol actualizado a ${usuario.rol}"))
             } catch (e: IllegalArgumentException) {
-                // Si mandaron un rol que no existe (ej: "SUPERMAN")
+                println("Error al convertir rol: ${e.message}") // Log de error
                 ResponseEntity.badRequest().body(mapOf("error" to "El rol '$nuevoRol' no existe"))
             }
         } else {
-            // 3. Si no encontramos el usuario
             return ResponseEntity.notFound().build()
         }
+    }
+
+    @PutMapping("/perfil")
+    fun actualizarMiPerfil(@RequestBody request: ActualizarPerfilRequest): ResponseEntity<Usuario> {
+        val emailAuth = SecurityContextHolder.getContext().authentication!!.name
+        val usuario = usuarioRepository.findByEmail(emailAuth).orElseThrow()
+
+        // Actualizamos solo los datos permitidos
+        usuario.telefono = request.telefono
+        usuario.direccion = request.direccion
+        usuario.email = request.email // Ojo: si cambia email, el próximo login debe ser con el nuevo
+
+        usuarioRepository.save(usuario)
+        return ResponseEntity.ok(usuario)
     }
 }

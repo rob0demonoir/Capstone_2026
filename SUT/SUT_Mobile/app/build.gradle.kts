@@ -61,6 +61,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    //gestion de imagenes
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
     //notificaciones sin google firebase
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     testImplementation(libs.junit)

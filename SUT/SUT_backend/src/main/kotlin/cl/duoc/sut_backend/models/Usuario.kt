@@ -28,19 +28,19 @@ data class Usuario (
     val apellido: String,
 
     @Column(unique = true, nullable = false)
-    val email: String,
+    var email: String,
 
     @Column(nullable = false)
     var contrasena: String,
 
     @Column(nullable = false)
-    val direccion: String,
+    var direccion: String,
 
     @Column(name = "fecha_nacimiento", nullable = false)
     val fechaNacimiento: LocalDate,
 
     @Column(nullable = false)
-    val telefono: String,
+    var telefono: String,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

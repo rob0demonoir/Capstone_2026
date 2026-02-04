@@ -1,7 +1,10 @@
 package cl.duoc.sut_mobile.network
 
+import cl.duoc.sut_mobile.model.ActualizarPerfilRequest
+import cl.duoc.sut_mobile.model.Aviso
 import cl.duoc.sut_mobile.model.CrearNoticiaRequest
 import cl.duoc.sut_mobile.model.CrearSolicitudRequest
+import cl.duoc.sut_mobile.model.CrearAvisoRequest
 import cl.duoc.sut_mobile.model.LoginRequest
 import cl.duoc.sut_mobile.model.LoginResponse
 import cl.duoc.sut_mobile.model.Solicitud
@@ -11,12 +14,16 @@ import retrofit2.http.Streaming
 import cl.duoc.sut_mobile.model.Usuario
 import cl.duoc.sut_mobile.model.Noticia
 import cl.duoc.sut_mobile.model.RegistroRequest
+import okhttp3.MultipartBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.GET
 import retrofit2.http.PUT
+import retrofit2.http.DELETE
+import retrofit2.http.Multipart
+import retrofit2.http.Part
 
 
 interface ApiService {
@@ -64,5 +71,21 @@ interface ApiService {
     // Enviamos el String directo ("ADMIN" o "VECINO") en el cuerpo
     @PUT("api/usuarios/{id}/rol")
     suspend fun actualizarRol(@Path("id") id: Long, @Body nuevoRol: String): Response<ResponseBody>
+
+    @GET("api/avisos")
+    suspend fun getAvisos(): Response<List<Aviso>>
+
+    @POST("api/avisos")
+    suspend fun publicarAviso(@Body request: CrearAvisoRequest): Response<ResponseBody>
+
+    @DELETE("api/avisos/{id}")
+    suspend fun borrarAviso(@Path("id") id: Long): Response<ResponseBody>
+
+    @Multipart
+    @POST("api/uploads")
+    suspend fun subirImagen(@Part file: MultipartBody.Part): Response<Map<String, String>>
+
+    @PUT("api/usuarios/perfil")
+    suspend fun actualizarPerfil(@Body request: ActualizarPerfilRequest): Response<Usuario>
 
 }

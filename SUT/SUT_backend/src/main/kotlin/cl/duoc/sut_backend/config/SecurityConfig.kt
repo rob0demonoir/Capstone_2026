@@ -2,6 +2,7 @@ package cl.duoc.sut_backend.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -25,6 +26,7 @@ class SecurityConfig (
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers("/api/autenticacion/**").permitAll() //se puede entrar al login y al registro sin autenticación
+                    .requestMatchers(HttpMethod.GET, "/api/uploads/**").permitAll()//se pueden ver imagenes sin autenticacion (solo ver)
                     .anyRequest().authenticated() // para todo lo demás se debe autenticar
             }
             .sessionManagement { session ->
