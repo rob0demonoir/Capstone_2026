@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { solicitudService } from '../services/solicitudService';
 import type { SolicitudResponse } from '../../../types';
-import { FileText, Download, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Download, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 export const CertificadosPage = () => {
     const [solicitudes, setSolicitudes] = useState<SolicitudResponse[]>([]);
@@ -29,7 +29,7 @@ export const CertificadosPage = () => {
             <div className="bg-blue-50 border border-blue-200 p-6 rounded-xl flex justify-between items-center">
                 <div>
                     <h2 className="text-xl font-bold text-blue-900">Certificado de Residencia</h2>
-                    <p className="text-blue-700">Obtén tu documento oficial firmado por la municipalidad.</p>
+                    <p className="text-blue-700">Obtén tu documento oficial firmado por la Junta de Vecinos.</p>
                 </div>
                 <button 
                     onClick={solicitar}

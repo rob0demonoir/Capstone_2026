@@ -1,114 +1,143 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { noticiaService } from '../services/noticiaService';
-import { NoticiaForm } from './NoticiaForm';
-import type { NoticiaResponse } from '../../../types';
-import { Calendar, User, Image as ImageIcon, Newspaper } from 'lucide-react';
+import { authService } from '../../auth/services/authService';
+import type { Noticia } from '../../../types';
+import { Calendar, User, Plus, ImageIcon, Newspaper } from 'lucide-react';
+import { formatearFecha } from '../../../utils/dateUtils';
+import { NuevaNoticiaModal } from './NuevaNoticiaModal';
+import { VerNoticiaModal } from './VerNoticiaModal'// <--- IMPORTACIÓN NUEVA
 
 export const NoticiasList = () => {
-    const [noticias, setNoticias] = useState<NoticiaResponse[]>([]);
+    const [noticias, setNoticias] = useState<Noticia[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    
+    // Estados para los modales
+    const [isModalOpen, setIsModalOpen] = useState(false); // Crear
+    const [noticiaSeleccionada, setNoticiaSeleccionada] = useState<Noticia | null>(null); // Ver Detalle
 
-    // Función para cargar noticias (la definimos aparte para poder reutilizarla)
+    const isAdmin = authService.isAdmin();
+
     const cargarNoticias = async () => {
         try {
-            setLoading(true);
             const data = await noticiaService.obtenerTodas();
             setNoticias(data);
-            setError(null);
-        } catch (err) {
-            console.error("Error al cargar noticias:", err);
-            setError("No se pudieron cargar las noticias. Revisa la conexión con el servidor.");
+        } catch (error) {
+            console.error(error);
         } finally {
             setLoading(false);
         }
     };
 
-    // Se ejecuta una sola vez al montar el componente
     useEffect(() => {
         cargarNoticias();
     }, []);
 
-    return (
-        <div className="max-w-6xl mx-auto space-y-8">
-            {/* Formulario para crear noticias (se le pasa la función de recarga como prop) */}
-            <section>
-                <NoticiaForm onNoticiaCreada={cargarNoticias} />
-            </section>
+    if (loading) return (
+        <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+        </div>
+    );
 
-            {/* Encabezado de la lista */}
-            <div className="flex items-center space-x-3 border-b pb-4">
-                <Newspaper className="text-blue-600" size={28} />
-                <h2 className="text-2xl font-bold text-gray-800">Muro de Noticias Municipales</h2>
+    return (
+        <div className="space-y-8">
+            {/* HEADER DE LA SECCIÓN */}
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-teal-50 p-6 rounded-2xl border border-teal-100">
+                <div>
+                    <h2 className="text-3xl font-extrabold text-teal-900">Noticias Publicadas</h2>
+                    <p className="text-teal-600 mt-1">Entérate de lo que pasa en tu barrio.</p>
+                </div>
+                
+                {isAdmin && (
+                    <button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-orange-500/30 transition-all transform hover:-translate-y-1 active:scale-95"
+                    >
+                        <Plus size={20} />
+                        <span>Publicar Noticia</span>
+                    </button>
+                )}
             </div>
 
-            {/* Estado de carga o error */}
-            {loading && noticias.length === 0 && (
-                <div className="text-center py-10 text-gray-500">Cargando noticias reales desde el servidor...</div>
-            )}
+            {/* GRID DE NOTICIAS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {noticias.map((n) => (
+                    <article 
+                        key={n.id} 
+                        onClick={() => setNoticiaSeleccionada(n)} // <--- CLICK PARA ABRIR
+                        className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 overflow-hidden flex flex-col h-full group cursor-pointer hover:-translate-y-1"
+                    >
+                        {/* IMAGEN DE CABECERA */}
+                        <div className="h-48 w-full bg-slate-200 relative overflow-hidden">
+                            {n.urlImagen ? (
+                                <img 
+                                    src={`http://192.168.100.19:8082${n.urlImagen}`} 
+                                    alt={n.titulo}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = 'https://placehold.co/400x200?text=Sin+Foto';
+                                    }}
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100">
+                                    <ImageIcon size={48} opacity={0.5} />
+                                </div>
+                            )}
+                            <div className="absolute top-0 right-0 bg-teal-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+                                OFICIAL
+                            </div>
+                        </div>
 
-            {error && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">
-                    {error}
+                        {/* CONTENIDO */}
+                        <div className="p-6 flex-1 flex flex-col">
+                            <h3 className="text-xl font-bold text-slate-800 mb-3 leading-tight group-hover:text-teal-700 transition-colors">
+                                {n.titulo}
+                            </h3>
+                            
+                            <p className="text-slate-600 text-sm mb-6 line-clamp-3 flex-1">
+                                {n.contenido}
+                            </p>
+
+                            {/* FOOTER DE LA CARD */}
+                            <div className="flex items-center justify-between pt-4 border-t border-slate-100 text-xs text-slate-500 mt-auto">
+                                <div className="flex items-center space-x-2">
+                                    <Calendar size={14} className="text-teal-500" />
+                                    <span>{formatearFecha(n.fechaPublicacion || n.fecha)}</span>
+                                </div>
+                                <div className="flex items-center space-x-2" title="Autor">
+                                    <User size={14} className="text-orange-500" />
+                                    <span className="font-medium truncate max-w-[100px]">
+                                        {typeof n.autor === 'object' ? n.autor.nombre : 'Admin'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                ))}
+            </div>
+
+            {noticias.length === 0 && (
+                <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                    <Newspaper size={48} className="mx-auto text-slate-300 mb-4" />
+                    <p className="text-slate-500 text-lg">No hay noticias publicadas aún.</p>
                 </div>
             )}
 
-            {/* Grid de Noticias */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {noticias.length > 0 ? (
-                    noticias.map((n) => (
-                        <article 
-                            key={n.id} 
-                            className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow"
-                        >
-                            {/* Imagen de la noticia */}
-                            <div className="h-48 w-full bg-gray-100">
-                                {n.urlImagen ? (
-                                    <img 
-                                        src={`http://localhost:8082${n.urlImagen}`} 
-                                        alt={n.titulo} 
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            // Si la imagen falla (ej. el server no la encuentra), ponemos un placeholder
-                                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x200?text=Sin+Imagen';
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                        <ImageIcon size={48} />
-                                    </div>
-                                )}
-                            </div>
+            {/* MODAL CREAR (ADMIN) */}
+            {isModalOpen && (
+                <NuevaNoticiaModal 
+                    isOpen={isModalOpen} 
+                    onClose={() => setIsModalOpen(false)} 
+                    onSuccess={cargarNoticias} 
+                />
+            )}
 
-                            {/* Contenido de la noticia */}
-                            <div className="p-5 flex-1 flex flex-col">
-                                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{n.titulo}</h3>
-                                <p className="text-gray-600 text-sm line-clamp-4 mb-4 flex-1">
-                                    {n.contenido}
-                                </p>
-
-                                {/* Meta data (Autor y Fecha) */}
-                                <div className="pt-4 border-t border-gray-100 space-y-2">
-                                    <div className="flex items-center text-xs text-gray-500 space-x-2">
-                                        <User size={14} className="text-blue-500" />
-                                        <span className="font-medium">{n.autor}</span>
-                                    </div>
-                                    <div className="flex items-center text-xs text-gray-400 space-x-2">
-                                        <Calendar size={14} />
-                                        <span>{new Date(n.fecha).toLocaleDateString('es-CL', {
-                                            day: '2-digit',
-                                            month: 'long',
-                                            year: 'numeric'
-                                        })}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
-                    ))
-                ) : (
-                    !loading && <div className="col-span-full text-center py-20 text-gray-400">No hay noticias publicadas todavía.</div>
-                )}
-            </div>
+            {/* MODAL VER DETALLE (TODOS) */}
+            {noticiaSeleccionada && (
+                <VerNoticiaModal 
+                    noticia={noticiaSeleccionada} 
+                    onClose={() => setNoticiaSeleccionada(null)} 
+                />
+            )}
         </div>
     );
 };

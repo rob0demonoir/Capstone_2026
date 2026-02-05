@@ -27,7 +27,7 @@ class GestionUsuariosViewModel(private val apiService: ApiService) : ViewModel()
                 val response = apiService.getUsuarios()
                 if (response.isSuccessful) {
                     todosLosUsuarios = response.body() ?: emptyList()
-                    filtrar(searchQuery) // Aplicamos filtro por si había algo escrito
+                    filtrar(searchQuery)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -52,14 +52,34 @@ class GestionUsuariosViewModel(private val apiService: ApiService) : ViewModel()
 
     fun alternarRol(usuario: Usuario) {
         viewModelScope.launch {
-            // Lógica simple: Invertir el rol actual
             val nuevoRol = if (usuario.rol == "ADMINISTRADOR") "VECINO" else "ADMINISTRADOR"
-
             try {
                 isLoading = true
                 val response = apiService.actualizarRol(usuario.id, nuevoRol)
                 if (response.isSuccessful) {
-                    cargarUsuarios() // Recargamos la lista para confirmar el cambio
+                    cargarUsuarios()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    // --- NUEVA FUNCIÓN: ELIMINAR ---
+    fun eliminarUsuario(id: Long) {
+        viewModelScope.launch {
+            isLoading = true
+            try {
+                val response = apiService.eliminarUsuario(id)
+                if (response.isSuccessful) {
+                    // Borrado exitoso: Lo quitamos de la lista local
+                    // Esto evita tener que llamar a cargarUsuarios() de nuevo
+                    todosLosUsuarios = todosLosUsuarios.filter { it.id != id }
+
+                    // Volvemos a aplicar el filtro para refrescar la pantalla
+                    filtrar(searchQuery)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -16,6 +16,16 @@ export interface Usuario {
     habilitado: boolean;
 }
 
+export interface Noticia {
+    id: number;
+    titulo: string;
+    contenido: string;
+    fechaPublicacion: string | number[];
+    fecha?: string | number[];
+    urlImagen?: string;
+    autor: Usuario | string;
+}
+
 export interface NoticiaResponse {
     id: number;
     titulo: string;
@@ -31,7 +41,7 @@ export interface AvisoResponse {
     descripcion: string;
     precio?: number;
     tipo: TipoAviso;
-    fechaPublicacion: string;
+    fechaPublicacion: string | number[];
     nombrePublicador: string;
     telefonoContacto: string;
     urlImagen?: string;
@@ -52,6 +62,7 @@ export interface CrearAvisoRequest {
     urlImagen?: string;
 }
 
+
 export interface SolicitudResponse {
     id: number;
     tipo: 'RESIDENCIA'; // Por ahora solo manejas este tipo según tu SQL
@@ -66,4 +77,9 @@ export interface SolicitudResponse {
 export interface ResponderSolicitudRequest {
     estado: EstadoSolicitud;
     comentarioAdmin: string;
+}
+
+export interface LoginResponse {
+    token: string;
+    usuario: Usuario; // Esto usa la interfaz Usuario que ya definimos antes
 }

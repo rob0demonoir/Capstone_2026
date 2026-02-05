@@ -11,4 +11,5 @@ interface UsuarioRepository: JpaRepository<Usuario, Long> {
     fun findByRut(rut: String): Optional<Usuario>
     fun existsByEmail(email: String): Boolean
     fun existsByRut(rut: String): Boolean
+    fun deleteById(email: String)
 }

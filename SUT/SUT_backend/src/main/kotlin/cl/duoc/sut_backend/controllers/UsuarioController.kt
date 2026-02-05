@@ -88,4 +88,18 @@ class UsuarioController(
         usuarioRepository.save(usuario)
         return ResponseEntity.ok(usuario)
     }
+    @DeleteMapping("/{id}")
+    fun eliminarUsuario(@PathVariable id: Long): ResponseEntity<Any> {
+        // 1. Verificamos si existe antes de intentar borrar
+        if (usuarioRepository.existsById(id)) {
+
+            // 2. Borramos (Gracias al CascadeType.ALL en la entidad,
+            // esto se llevará las noticias, avisos y solicitudes también)
+            usuarioRepository.deleteById(id)
+
+            return ResponseEntity.ok(mapOf("mensaje" to "Usuario eliminado correctamente"))
+        } else {
+            return ResponseEntity.notFound().build()
+        }
+    }
 }

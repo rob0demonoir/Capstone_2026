@@ -1,4 +1,4 @@
-package cl.duoc.sut_mobile.ui.viewmodel
+/**package cl.duoc.sut_mobile.ui.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -145,6 +145,182 @@ class HomeViewModel(private val apiService: ApiService) : ViewModel() {
     }
 
     // Función para recargar si falla (puedes poner un botón de reintentar)
+    fun reintentar() {
+        cargarDatos()
+    }
+}**/
+
+package cl.duoc.sut_mobile.ui.viewmodel
+
+import android.content.Context
+import android.net.Uri
+import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import cl.duoc.sut_mobile.model.ActualizarPerfilRequest
+// import cl.duoc.sut_mobile.model.CrearNoticiaRequest // YA NO LO NECESITAMOS
+import cl.duoc.sut_mobile.model.EstadoSolicitud
+import cl.duoc.sut_mobile.model.Noticia
+import cl.duoc.sut_mobile.model.ResponderSolicitudRequest
+import cl.duoc.sut_mobile.model.Solicitud
+import cl.duoc.sut_mobile.model.Usuario
+import cl.duoc.sut_mobile.network.ApiService
+import cl.duoc.sut_mobile.utils.FileUtils
+import cl.duoc.sut_mobile.utils.toRequestBody // Asegúrate de tener tus extensiones aquí
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
+
+class HomeViewModel(private val apiService: ApiService) : ViewModel() {
+
+    var usuario by mutableStateOf<Usuario?>(null)
+    var noticias by mutableStateOf<List<Noticia>>(emptyList())
+    var isLoading by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
+    var solicitudesAdmin by mutableStateOf<List<Solicitud>>(emptyList())
+
+    init {
+        cargarDatos()
+    }
+
+    fun cargarDatos() {
+        isLoading = true
+        errorMessage = null
+        viewModelScope.launch {
+            try {
+                // 1. Cargar Usuario
+                val userResponse = apiService.getPerfil()
+                if (userResponse.isSuccessful) {
+                    usuario = userResponse.body()
+                    if (usuario?.rol?.uppercase()?.contains("ADMIN") == true) {
+                        cargarSolicitudesAdmin()
+                    }
+                }
+
+                // 2. Cargar Noticias
+                val noticiasResponse = apiService.getNoticias()
+                if (noticiasResponse.isSuccessful) {
+                    noticias = noticiasResponse.body() ?: emptyList()
+                }
+
+            } catch (e: Exception) {
+                errorMessage = "Error de conexión"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    private suspend fun cargarSolicitudesAdmin() {
+        val response = apiService.getTodasSolicitudes()
+        if (response.isSuccessful) {
+            solicitudesAdmin = response.body() ?: emptyList()
+        }
+    }
+
+    fun responderSolicitud(id: Long, aprobar: Boolean) {
+        viewModelScope.launch {
+            val nuevoEstado = if (aprobar) EstadoSolicitud.APROBADA else EstadoSolicitud.RECHAZADA
+            val comentario = if (aprobar) "Aprobado desde App Móvil" else "Rechazado por Admin"
+
+            val request = ResponderSolicitudRequest(nuevoEstado, comentario)
+
+            try {
+                val response = apiService.responderSolicitud(id, request)
+                if (response.isSuccessful) {
+                    cargarSolicitudesAdmin()
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error al responder solicitud"
+            }
+        }
+    }
+
+    // --- FUNCIÓN ACTUALIZADA A MULTIPART ---
+    fun publicarNoticia(context: Context, titulo: String, contenido: String, imagenUri: Uri?) {
+        viewModelScope.launch {
+            isLoading = true
+            try {
+                Log.d("NOTICIA_DEBUG", "Preparando envío Multipart...")
+
+                // 1. Convertir textos a RequestBody
+                val tituloPart = titulo.toRequestBody()
+                val contenidoPart = contenido.toRequestBody()
+
+                // 2. Procesar Imagen (si existe)
+                var imagenPart: MultipartBody.Part? = null
+
+                if (imagenUri != null) {
+                    val file = FileUtils.getFileFromUri(context, imagenUri)
+                    if (file != null && file.exists()) {
+                        val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
+
+                        // "imagen" debe coincidir con @RequestParam("imagen") del Backend
+                        imagenPart = MultipartBody.Part.createFormData("imagen", file.name, requestFile)
+                    }
+                }
+
+                // 3. Llamar al Endpoint Multipart
+                val response = apiService.publicarNoticia(
+                    titulo = tituloPart,
+                    contenido = contenidoPart,
+                    imagen = imagenPart
+                )
+
+                if (response.isSuccessful) {
+                    // 4. Recargar la lista para mostrar la nueva noticia (y su foto)
+                    Log.d("NOTICIA_DEBUG", "¡Éxito! Recargando lista...")
+                    val noticiasResponse = apiService.getNoticias()
+                    if (noticiasResponse.isSuccessful) {
+                        noticias = noticiasResponse.body() ?: emptyList()
+                    }
+                } else {
+                    errorMessage = "Error al publicar: ${response.code()}"
+                    Log.e("NOTICIA_DEBUG", "Error: ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = "Error de conexión al publicar"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun actualizarPerfil(telefono: String, direccion: String, email: String) {
+        viewModelScope.launch {
+            isLoading = true
+            try {
+                val request = ActualizarPerfilRequest(telefono, direccion, email)
+                val response = apiService.actualizarPerfil(request)
+
+                if (response.isSuccessful) {
+                    usuario = response.body()
+                    errorMessage = null
+                } else {
+                    errorMessage = "Error al actualizar perfil"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error de conexión"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun limpiarDatos() {
+        usuario = null
+        noticias = emptyList()
+        solicitudesAdmin = emptyList()
+        errorMessage = null
+        isLoading = false
+    }
+
     fun reintentar() {
         cargarDatos()
     }

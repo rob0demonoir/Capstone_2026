@@ -9,19 +9,20 @@ import java.io.File
 import java.io.FileOutputStream
 
 object FileUtils {
-    fun getMultipartBodyFromUri(context: Context, uri: Uri): MultipartBody.Part? {
+    fun getFileFromUri(context: Context, uri: Uri): File? {
         return try {
-            val contentResolver = context.contentResolver
-            val tempFile = File(context.cacheDir, "upload_temp.jpg")
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+            // Crear archivo temporal
+            val tempFile = File.createTempFile("upload_temp", ".jpg", context.cacheDir)
+            tempFile.deleteOnExit()
 
-            val inputStream = contentResolver.openInputStream(uri)
-            val outputStream = FileOutputStream(tempFile)
-            inputStream?.copyTo(outputStream)
-            inputStream?.close()
-            outputStream.close()
-
-            val requestFile = tempFile.asRequestBody("image/*".toMediaTypeOrNull())
-            MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
+            // Copiar datos
+            inputStream.use { input ->
+                tempFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            tempFile
         } catch (e: Exception) {
             e.printStackTrace()
             null
